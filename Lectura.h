@@ -12,8 +12,9 @@
         int items;
         int num;
         string line;
-        string className;
+        string type;
         bool commentFlag;
+        bool stringFlag;
 
         public:
         Lectura();
@@ -23,6 +24,7 @@
         int getModifiedLDC();
         int getAddedLDC();
         int getItems();
+        string getType();
         void Calcula(string);
     };
 
@@ -34,8 +36,9 @@
         addedLDC = 0;
         items = 0;
         num = 0;
-        className = " ";
+        type = " ";
         commentFlag = false;
+        stringFlag = false;
     }
 
     int Lectura::getTotalLDC(){
@@ -59,18 +62,41 @@
     }
 
     int Lectura::getAddedLDC(){
-        return (this->totalLDC - this->baseLDC + this->deletedLDC);
+        return addedLDC;
+    }
+
+    string Lectura::getType(){
+        if(baseLDC > 0 && (modifiedLDC > 0 || deletedLDC > 0 || addedLDC > 0 )){
+            return "Base";
+        }
+        if(baseLDC == 0 && modifiedLDC == 0 && deletedLDC == 0 && addedLDC > 0 ){
+            return "Nueva";
+        }
+        if(baseLDC > 0 && modifiedLDC == 0 && deletedLDC == 0 && addedLDC == 0 ){
+            return "Reusada";
+        }
+        return "";   
     }
 
     void Lectura::Calcula(string file){
         ifstream read(file);
+        commentFlag = false;
+        stringFlag = false;
         while(getline(read,line)){
             totalLDC++;
-
             if(commentFlag){
                 totalLDC--;
-                cout<<"Enmedio"<<endl;
             }
+            if(!commentFlag && line.find("/*") != string::npos){
+	  			commentFlag = true;
+                totalLDC--;
+                cout<<file<<" Comentario multi empieza"<<num++<<endl;		
+	  		}
+            
+            if(!stringFlag && line.find('"') != string::npos){
+                stringFlag = true;
+            }
+
             if(line.find("//.i") != string::npos){
                 items++;
             }
@@ -91,7 +117,7 @@
                 deletedLDC = deletedLDC + stoi(number);
             }
 
-            if(!commentFlag && line.find("//.m") != string::npos){
+            if(!stringFlag && !commentFlag && line.find("//.m") != string::npos){
                 modifiedLDC++;
                 totalLDC++;
             }
@@ -105,7 +131,7 @@
                 }
                 if(!aux){
                     totalLDC--;
-                    //cout<<"hola"<<endl;
+                    cout<<file<<" Unico "<<num++<<endl;
                 }
 	  		}
 
@@ -118,6 +144,7 @@
                 }
                 if(!aux){
                     totalLDC--;
+                    cout<<file<<" Unico "<<num++<<endl;
                 }
             }
 
@@ -130,31 +157,29 @@
 	  			}
 	  			if(!aux){
 	  				totalLDC--;
+                      cout<<file<<" Blanca "<<num++<<endl;
 	  			}
 	  		}
-
-            if(line.empty()){
-	  			totalLDC--;
-	  		}  
-
-            if(line.find("//") != string::npos){
+            if(!commentFlag && line.find("//") != string::npos){
                 int help = line.find("//");
                 if(line[help-1] == ':'){
                     continue;
                 }
 	  			totalLDC--;
+                cout<<file<<" Comentario "<<num++<<endl;
 	  		}
-            if(!commentFlag && line.find("/*") != string::npos){
-	  			commentFlag = true;
-                cout<<"Empieza"<<endl;
-                totalLDC--;		
-	  		}
+            
             if(commentFlag && line.find("*/") != string::npos){
 	  			commentFlag = false;
-                cout<<"Termina"<<endl;
+                cout<<file<<" Comentario multi acaba"<<num++<<endl;
 	  		}
 
+            if(stringFlag && line.find('"') != string::npos){
+                stringFlag = false;
+            }
+
         }
+        addedLDC = totalLDC - baseLDC + deletedLDC;
     }
 
 
